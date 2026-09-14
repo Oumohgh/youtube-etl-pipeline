@@ -1,34 +1,55 @@
+
+CHANNEL_HANDLE = "@Apprendrelefrench"
+API_KEY = "AIzaSyBOfQHV_9lPonsEZSSMRZrE0JXAXmoWWtQ"
+PLAYLIST_ID = "UUpHM28yYMzkq193ZDJSEPiQ"
+
+BASE_URL = "https://www.googleapis.com/youtube/v3"
+
 import requests
 import json
 
-API_KEY = "AIzaSyBOfQHV_9lPonsEZSSMRZrE0JXAXmoWWtQ"
-CHANNEL_HANDLE = "@Apprendrelefrench"
-BASE_URL = "https://www.googleapis.com/youtube/v3"
 
+def get_video_ids(playlist_id):
 
+    url = f"{BASE_URL}/playlistItems"
 
+    video_ids = []
+    page_token = None
+    page = 1
 
-def chunk_list(items: list, size: int = 50) -> list[list]:
-    
-    return [items[i:i + size] for i in range(0, len(items), size)]
+    while True:
 
-
-def get_video_details(video_ids: list[str]) -> list[dict]:
-   
-    all_videos = []
-    batches = chunk_list(video_ids, 50)
-
-    for i, batch in enumerate(batches, start=1):
-        print(f"Fetching batch {i}/{len(batches)} ({len(batch)} videos)...")
-
-        response = requests.get(f"{BASE_URL}/videos", params={
-            "part": "snippet,contentDetails,statistics",
-            "id": ",".join(batch),
+        params = {
+            "playlistId": playlist_id,
+            "part": "snippet",
+            "maxResults": 50,
             "key": API_KEY
-        })
+        }
+
+        if page_token:
+            params["pageToken"] = page_token
+
+        response = requests.get(url, params=params)
         response.raise_for_status()
+
         data = response.json()
 
-        all_videos.extend(data.get("items", []))
+        print(f"Page {page}: {len(data['items'])} videos")
 
-    return all_videos
+        for item in data["items"]:
+
+            video_id = item["snippet"]["resourceId"]["videoId"]
+
+            video_ids.append(video_id)
+
+        page_token = data.get("nextPageToken")
+
+        print("Total collected:", len(video_ids))
+
+        if not page_token:
+            break
+
+        page += 1
+
+    return video_ids
+
