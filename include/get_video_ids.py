@@ -2,6 +2,7 @@ import os
 import json
 import requests
 from dotenv import load_dotenv
+from datetime import date
 
 load_dotenv()
 
@@ -18,7 +19,7 @@ def get_channel_id(handle):
         channel_id = data["items"][0]["id"]
         uploads_playlist_id = data["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
         return channel_id, uploads_playlist_id
-    raise Exception("Chaîne introuvable, veuillez vérifier le Handle de la chaîne.")
+    raise Exception("Chaine introuvable, veuillez vérifier le Handle de la chaine.")
 
 
 def get_playlist_videos(playlist_id):
@@ -73,20 +74,20 @@ def get_videos_details(video_ids):
 
     return formatted_data
 
+from datetime import date
 
 def run_youtube_extraction(uploads_playlist):
-    print("Extraction des données YouTube en cours...")
+    print("Extraction des donnees YouTube en cours...")
 
     v_ids = get_playlist_videos(uploads_playlist)
     youtube_data = get_videos_details(v_ids)
 
-    file_path = "data/YTdata_output.json"
+    file_path = f"data/YTdata{date.today()}.json"
 
     with open(file_path, "w", encoding="utf-8") as f:
         json.dump(youtube_data, f, ensure_ascii=False, indent=4)
 
-    print(f"Succès ! {len(youtube_data)} vidéos ont été sauvegardées dans {file_path}")
-
+    print(f"Succes ! {len(youtube_data)} videos ont ete sauvegardees dans {file_path}")
 
 if __name__ == "__main__":
     channel_id, uploads_playlist_id = get_channel_id(CHANNEL_HANDLE)
