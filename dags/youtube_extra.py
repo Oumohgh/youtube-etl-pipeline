@@ -27,6 +27,7 @@ with DAG(
     catchup=False,
 ) as dag:
 
+
     get_channel_id_task = PythonOperator(
         task_id="get_channel_id",
         python_callable=get_channel_id,
@@ -38,4 +39,3 @@ with DAG(
     )
 
 
-get_channel_id_task >> get_playlist_videos_task 
