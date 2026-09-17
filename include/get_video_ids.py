@@ -76,18 +76,27 @@ def get_videos_details(video_ids):
 
 from datetime import date
 
+
+def save_ytdata(videos):
+    data_dir = os.getenv("DATA_DIR", "data")
+    os.makedirs(data_dir, exist_ok=True)
+    file_path = os.path.join(data_dir, f"YTdata{date.today()}.json")
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(videos, f, ensure_ascii=False, indent=4)
+
+    print(f"Succes ! {len(videos)} videos ont ete sauvegardees dans {file_path}")
+    return file_path
+
+
 def run_youtube_extraction(uploads_playlist):
     print("Extraction des donnees YouTube en cours...")
 
     v_ids = get_playlist_videos(uploads_playlist)
     youtube_data = get_videos_details(v_ids)
 
-    file_path = f"data/YTdata{date.today()}.json"
+    return save_ytdata(youtube_data)
 
-    with open(file_path, "w", encoding="utf-8") as f:
-        json.dump(youtube_data, f, ensure_ascii=False, indent=4)
-
-    print(f"Succes ! {len(youtube_data)} videos ont ete sauvegardees dans {file_path}")
 
 if __name__ == "__main__":
     channel_id, uploads_playlist_id = get_channel_id(CHANNEL_HANDLE)
