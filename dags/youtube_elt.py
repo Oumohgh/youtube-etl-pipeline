@@ -1,6 +1,5 @@
-import os
 import sys
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 
 from airflow import DAG
@@ -9,52 +8,50 @@ from airflow.operators.python import PythonOperator
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE_DIR))
 
-from include.load_to_core import sync_core
-from include.load_to_staging import load_json_to_staging
-from include.transform_data import transform_staging
+from include.core_loader import (
+    get_transformed_staging_rows,
+    sync_core,
+)
+from include.json_writer import read_json
+from include.staging_loader import sync_staging
 
 
-def _load_staging(ti, dag_run):
-    data_dir = os.getenv("DATA_DIR", "data")
-    default_file = os.path.join(data_dir, f"YTdata{date.today()}.json")
-    json_filepath = (dag_run.conf or {}).get("json_filepath", default_file)
-
-    load_json_to_staging(json_filepath)
-    ti.xcom_push("source_filepath", json_filepath)
-    return json_filepath
+def _sync_staging(dag_run):
+    json_filepath = dag_run.conf.get("json_filepath")
+    sync_staging(read_json(json_filepath))
 
 
-def _transform(ti):
-    clean_filepath = transform_staging()
-    ti.xcom_push("clean_filepath", clean_filepath)
-    return clean_filepath
+def _transform_data(ti):
+    transformed_videos = get_transformed_staging_rows()
+    ti.xcom_push("transformed_videos", transformed_videos)
+    return transformed_videos
 
 
-def _load_core(ti):
-    clean_filepath = ti.xcom_pull(task_ids="transform", key="clean_filepath")
-    sync_core(clean_filepath)
+def _sync_core(ti):
+    transformed_videos = ti.xcom_pull(task_ids="transform_data", key="transformed_videos")
+    sync_core(transformed_videos)
 
 
 with DAG(
-    dag_id="youtube_elt",
+    dag_id="warehouse_update",
     start_date=datetime(2026, 9, 16),
-    schedule="@daily",
+    schedule=None,
     catchup=False,
 ) as dag:
 
-    load_staging_task = PythonOperator(
-        task_id="load_staging",
-        python_callable=_load_staging,
+    sync_staging_task = PythonOperator(
+        task_id="sync_staging",
+        python_callable=_sync_staging,
     )
 
-    transform_task = PythonOperator(
-        task_id="transform",
-        python_callable=_transform,
+    transform_data_task = PythonOperator(
+        task_id="transform_data",
+        python_callable=_transform_data,
     )
 
-    load_core_task = PythonOperator(
-        task_id="load_core",
-        python_callable=_load_core,
+    sync_core_task = PythonOperator(
+        task_id="sync_core",
+        python_callable=_sync_core,
     )
 
-    load_staging_task >> transform_task >> load_core_task
+    sync_staging_task >> transform_data_task >> sync_core_task
