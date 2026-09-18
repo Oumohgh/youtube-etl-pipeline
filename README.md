@@ -89,6 +89,3 @@ Statut actuel
  Transformation complete des donnees (en cours)
  Tests automatises
  Dashboard Power BI (bonus)
-Auteur
-
-Mohammed Oughlan
