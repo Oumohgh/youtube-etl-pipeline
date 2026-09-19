@@ -8,10 +8,6 @@ ISO_DURATION_RE = re.compile(
     r"(?:(?P<seconds>\d+(?:\.\d+)?)S)?)?"
 )
 
-VIRAL_THRESHOLD = 1_000_000
-HIGH_THRESHOLD = 100_000
-MEDIUM_THRESHOLD = 10_000
-
 
 def duration_to_seconds(iso):
     """Convertit une duree au format ISO 8601 (ex: PT1H2M3S) en secondes."""
@@ -38,24 +34,6 @@ def to_int(value, default=0):
         return default
 
 
-def classify_popularity(view_count):
-    """
-    Classe une video selon son audience (regles definies par le projet).
-
-    Seuils justifies : "viral" pour plus d'1 million de vues correspond aux
-    videos ayant depasse un seuil de visibilite nationale ; "high" a partir de
-    100 000 vues ; "medium" a partir de 10 000 vues ; "low" en dessous.
-    Ces categories permettent des analyses de performance par segment.
-    """
-    if view_count >= VIRAL_THRESHOLD:
-        return "viral"
-    if view_count >= HIGH_THRESHOLD:
-        return "high"
-    if view_count >= MEDIUM_THRESHOLD:
-        return "medium"
-    return "low"
-
-
 def _to_datetime(value):
     """Convertit une date ISO 8601 (ex: 2023-01-15T10:00:00Z) en datetime UTC."""
     if not value:
@@ -63,36 +41,27 @@ def _to_datetime(value):
     return datetime.fromisoformat(value.replace("Z", "+00:00")).astimezone(timezone.utc)
 
 
+def clean_title(title):
+    """Nettoie un titre en retirant les espaces superflus."""
+    if not title:
+        return "Untitled"
+    cleaned = title.strip()
+    return cleaned or "Untitled"
+
+
 def transform_staging_rows(rows):
     """Transforme les lignes brutes de staging en lignes typees pour core."""
     transformed = []
     for row in rows:
-        view_count = to_int(row.get("view_count"))
-        like_count = to_int(row.get("like_count"))
-        comment_count = to_int(row.get("comment_count"))
-        published_at = _to_datetime(row.get("published_at"))
-
-        if view_count > 0:
-            engagement_rate = round((like_count + comment_count) / view_count * 100, 2)
-        else:
-            engagement_rate = None
-
         transformed.append(
             {
                 "video_id": row.get("video_id"),
-                "title": row.get("title") or "Untitled",
-                "published_at": published_at,
+                "title": clean_title(row.get("title")),
+                "published_at": _to_datetime(row.get("published_at")),
                 "duration_seconds": duration_to_seconds(row.get("duration")),
-                "view_count": view_count,
-                "like_count": like_count,
-                "comment_count": comment_count,
-                "engagement_rate": engagement_rate,
-                # jours depuis la publication : mesure la fraicheur du contenu,
-                # utile pour suivre la vitesse de croissance des videos.
-                "days_since_publish": (
-                    (datetime.now(timezone.utc) - published_at).days if published_at else None
-                ),
-                "popularity_level": classify_popularity(view_count),
+                "view_count": to_int(row.get("view_count")),
+                "like_count": to_int(row.get("like_count")),
+                "comment_count": to_int(row.get("comment_count")),
             }
         )
     return transformed

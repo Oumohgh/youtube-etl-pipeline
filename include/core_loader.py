@@ -23,12 +23,9 @@ def _ensure_core_table(hook):
             title TEXT,
             published_at TIMESTAMP,
             duration_seconds INTEGER,
-            view_count BIGINT,
-            like_count BIGINT,
-            comment_count BIGINT,
-            engagement_rate DOUBLE PRECISION,
-            days_since_publish INTEGER,
-            popularity_level VARCHAR(20),
+            view_count INTEGER,
+            like_count INTEGER,
+            comment_count INTEGER,
             updated_at TIMESTAMP
         )
         """
@@ -57,13 +54,11 @@ def sync_core(transformed_videos):
             """
             INSERT INTO core (
                 video_id, title, published_at, duration_seconds,
-                view_count, like_count, comment_count, engagement_rate,
-                days_since_publish, popularity_level, updated_at
+                view_count, like_count, comment_count, updated_at
             )
             VALUES (
                 %(video_id)s, %(title)s, %(published_at)s, %(duration_seconds)s,
-                %(view_count)s, %(like_count)s, %(comment_count)s, %(engagement_rate)s,
-                %(days_since_publish)s, %(popularity_level)s, %(updated_at)s
+                %(view_count)s, %(like_count)s, %(comment_count)s, %(updated_at)s
             )
             ON CONFLICT (video_id) DO UPDATE SET
                 title = EXCLUDED.title,
@@ -72,9 +67,6 @@ def sync_core(transformed_videos):
                 view_count = EXCLUDED.view_count,
                 like_count = EXCLUDED.like_count,
                 comment_count = EXCLUDED.comment_count,
-                engagement_rate = EXCLUDED.engagement_rate,
-                days_since_publish = EXCLUDED.days_since_publish,
-                popularity_level = EXCLUDED.popularity_level,
                 updated_at = EXCLUDED.updated_at
             """,
             parameters={
@@ -85,9 +77,6 @@ def sync_core(transformed_videos):
                 "view_count": video["view_count"],
                 "like_count": video["like_count"],
                 "comment_count": video["comment_count"],
-                "engagement_rate": video["engagement_rate"],
-                "days_since_publish": video["days_since_publish"],
-                "popularity_level": video["popularity_level"],
                 "updated_at": datetime.now(timezone.utc),
             },
         )
