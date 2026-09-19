@@ -49,8 +49,7 @@ def sync_core(transformed_videos):
     hook = PostgresHook(postgres_conn_id="postgres_db_yt_elt")
     _ensure_core_table(hook)
 
-    # Une video encore presente dans core mais absente du nouveau staging a
-    # disparu de la source : on la supprime pour garder core synchronise.
+    
     hook.run("DELETE FROM core WHERE video_id NOT IN (SELECT video_id FROM staging)")
 
     for video in transformed_videos:

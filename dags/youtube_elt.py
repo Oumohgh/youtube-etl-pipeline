@@ -8,16 +8,18 @@ from airflow.operators.python import PythonOperator
 BASE_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(BASE_DIR))
 
-from include.core_loader import (
-    get_transformed_staging_rows,
-    sync_core,
-)
+from include.core_loader import get_transformed_staging_rows, sync_core
 from include.json_writer import read_json
 from include.staging_loader import sync_staging
 
 
 def _sync_staging(dag_run):
     json_filepath = dag_run.conf.get("json_filepath")
+    if not json_filepath:
+        raise ValueError(
+            "json_filepath manquant dans dag_run.conf — "
+            "ce DAG doit être déclenché par youtube_extraction, pas manuellement sans conf."
+        )
     sync_staging(read_json(json_filepath))
 
 
@@ -34,7 +36,7 @@ def _sync_core(ti):
 
 with DAG(
     dag_id="warehouse_update",
-    start_date=datetime(2026, 9, 16),
+    start_date=datetime(2026, 9, 12),
     schedule=None,
     catchup=False,
 ) as dag:

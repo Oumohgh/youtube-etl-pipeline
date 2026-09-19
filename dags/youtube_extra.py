@@ -47,8 +47,8 @@ def _save_json(ti):
 
 with DAG(
     dag_id="youtube_extraction",
-    start_date=datetime(2026, 9, 16),
-    schedule="@daily",
+    start_date=datetime(2026, 9, 18),
+    schedule=None,
     catchup=False,
 ) as dag:
 
@@ -83,7 +83,5 @@ with DAG(
     (
         get_channel_id_task
         >> get_playlist_videos_task
-        >> get_videos_details_task
-        >> save_json_task
-        >> trigger_warehouse_update
+        >> get_videos_details_task >> save_json_task>> trigger_warehouse_update
     )
